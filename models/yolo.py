@@ -34,6 +34,7 @@ from models.modules.wtconv import WTConv
 from models.modules.conv import DConv
 from models.modules.block import C3k2, A2C2f, C3k2PPA, DNResBlock
 from models.modules.lsk import LSKAttention
+from models.modules.dinov3_backbone import DINOv3ConvNeXt, Index
 
 class Detect(nn.Module):
     stride = None  # strides computed during build
@@ -451,6 +452,10 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             args.append([ch[x] for x in f])
             if isinstance(args[1], int):  # number of anchors
                 args[1] = [list(range(args[1] * 2))] * (len(f) - 1)
+        elif m is DINOv3ConvNeXt:
+            c2 = args[-1]  # last stage output channels (for ch tracking)
+        elif m is Index:
+            c2 = args[1]  # explicitly specified output channels
         elif m is Contract:
             c2 = ch[f] * args[0] ** 2
         elif m is Expand:

@@ -4,3 +4,5 @@ yolov5s.pt
 yolov5l.pt
 script/
 without_inference/
+__pycache__/
+.vscode/
