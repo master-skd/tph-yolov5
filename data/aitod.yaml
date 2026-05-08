@@ -1,0 +1,13 @@
+
+
+
+
+path: ../datasets/AI-TOD  # dataset root dir
+train: train/images  # train images (relative to 'path')  6471 images
+val: val/images  # val images (relative to 'path')  548 images
+test: test/images  # test images (optional)  1610 images
+
+# Classes
+nc: 8  # number of classes
+names: ['airplane', 'bridge', 'storage-tank', 'ship', 'swimming-pool', 'vehicle', 'person', 'wind-mill']
+

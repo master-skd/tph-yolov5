@@ -1,0 +1,6 @@
+path: /data1/code/xy/datasets/Anti-UAV-SUM-datsets
+train: images/train
+val: images/val
+test: images/val
+nc: 1
+names: ['drone']

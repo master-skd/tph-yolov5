@@ -1,0 +1,6 @@
+path: /home/datang/datasets/baji
+train: train/images
+val: valid/images
+
+nc: 1
+names: ['drone']

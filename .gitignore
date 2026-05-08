@@ -1,0 +1,6 @@
+runs/
+wandb/
+yolov5s.pt
+yolov5l.pt
+script/
+without_inference/

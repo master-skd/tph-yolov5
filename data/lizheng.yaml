@@ -1,0 +1,13 @@
+
+
+
+
+path: /data1/code/xy/datasets/yolo_lizheng  # dataset root dir
+train: images/train  # train images (relative to 'path')  6471 images
+val: images/val  # val images (relative to 'path')  548 images
+test: images/val  # test images (optional)  1610 images
+
+# Classes
+nc: 1  # number of classes
+names: ['drone']
+

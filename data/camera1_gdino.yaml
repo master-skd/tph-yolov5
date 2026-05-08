@@ -1,0 +1,5 @@
+path: /data1/code/xy/datasets/camera1_gdino_200
+train: images/train
+val: images/train # Use the same for validation for now
+nc: 1
+names: ['drone']

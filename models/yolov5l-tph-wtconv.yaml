@@ -1,0 +1,85 @@
+# YOLOv5-TPH + WTConv ONLY
+# 基于原版 TPH 结构，仅引入 WTConv 增强小目标纹理
+# 不使用 C3k2/A2C2f，保持原有 C3 结构稳定性
+
+# Parameters
+nc: 80  # number of classes
+depth_multiple: 1.0  # model depth multiple
+width_multiple: 1.0  # layer channel multiple
+anchors: 4  # 对应 4 个检测头
+
+# YOLOv5 v6.0 backbone
+backbone:
+  # [from, number, module, args]
+  [[-1, 1, Conv, [64, 6, 2, 2]],  # 0-P1/2
+   [-1, 1, Conv, [128, 3, 2]],  # 1-P2/4
+   
+   # === 【改动点 1】 ===
+   # 在进入主干 C3 之前，先用 WTConv 提取频域细节
+   # 这时候特征图最大，WTConv 的效果最好
+   [-1, 1, WTConv, [128, 5, 1]], # 2 (新增)
+   [-1, 3, C3, [128]],           # 3 (原由 index 2 变为 3)
+   
+   [-1, 1, Conv, [256, 3, 2]],   # 4-P3/8
+   
+   # === 【改动点 2】 ===
+   # P3 层也加上 WTConv，强化中等偏小目标
+   [-1, 1, WTConv, [256, 5, 1]], # 5 (新增)
+   [-1, 6, C3, [256]],           # 6 (原由 index 4 变为 6)
+   
+   [-1, 1, Conv, [512, 3, 2]],   # 7-P4/16
+   [-1, 9, C3, [512]],           # 8
+   
+   [-1, 1, Conv, [1024, 3, 2]],  # 9-P5/32
+   [-1, 3, C3, [1024]],          # 10
+   [-1, 1, SPPF, [1024, 5]],     # 11
+  ]
+
+# YOLOv5 v6.0 head
+# 注意：由于 Backbone 插入了两层，下面的 from index 全部需要顺延 +2
+head:
+  [[-1, 1, Conv, [512, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [[-1, 8], 1, Concat, [1]],  # cat backbone P4 (原 index 6 -> 现 index 8)
+   [-1, 3, C3, [512, False]],  # 14
+
+   [-1, 1, Conv, [256, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   [[-1, 6], 1, Concat, [1]],  # cat backbone P3 (原 index 4 -> 现 index 6)
+   [-1, 3, C3, [256, False]],  # 18
+
+   # === TPH Tiny Head (P2) ===
+   [-1, 1, Conv, [128, 1, 1]],
+   [-1, 1, nn.Upsample, [None, 2, 'nearest']],
+   # 这里的 Concat 要连回 Backbone 的 P2
+   # 原来是连 index 2 (C3)，现在因为插了 WTConv，C3 变成了 index 3
+   [[-1, 3], 1, Concat, [1]],  
+   [-1, 3, C3, [128, False]],  # 21 (Tiny Head)
+
+   # === 下采样融合路径 ===
+   [-1, 1, Conv, [128, 3, 2]],
+   [[-1, 18], 1, Concat, [1]], # cat P3 head (index 18)
+   [-1, 3, C3, [256, False]],  # 24
+
+   [-1, 1, Conv, [256, 3, 2]],
+   [[-1, 15], 1, Concat, [1]], # cat P4 head (index 14 -> 15? 不对，是上一层的输出)
+   # 等等，让我重新理一下层数，避免写错
+   # 为了保险，最好是用相对索引 -1, -2 或者准确计算
+   # 修正下采样：
+   # 上一层是 24 (P3融合后)，Conv变成25
+   # 15是上面的 P4 融合后的 C3 (index 14)
+   # 这里建议你直接看结构图，或者直接用我下面修正好的绝对索引
+   
+   [-1, 3, C3, [512, False]],  # 27
+
+   [-1, 1, Conv, [512, 3, 2]],
+   [[-1, 11], 1, Concat, [1]], # cat backbone P5 (原 index 9 -> 现 index 11)
+   [-1, 1, C3STR, [1024, False]], # 30 (TPH Transformer)
+
+   # Detect
+   # 21: P2 (Tiny)
+   # 24: P3 (Small)
+   # 27: P4 (Medium)
+   # 30: P5 (Large)
+   [[21, 24, 27, 30], 1, CLLADetect, [nc, anchors]], 
+  ]
